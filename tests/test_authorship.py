@@ -187,6 +187,43 @@ class TestAuthorshipAudit:
         assert data["violations"] == []
         assert len(data["advisories"]) >= 1
 
+    def test_subject_matter_mention_in_message_is_advisory(self, tmp_path: Path) -> None:
+        repo = tmp_path / "mention"
+        repo.mkdir()
+        init_repo(repo)
+        self._copy_audit_script(repo)
+        (repo / "m.txt").write_text("x\n", encoding="utf-8")
+        git(["add", "m.txt"], cwd=repo)
+        git(
+            ["commit", "-m", "feat(ingest): parse external session bundles\n\nThe parser reads jsonl transcripts from the session store."],
+            cwd=repo,
+        )
+        code, data = self._run_audit(repo, strict=True)
+        assert code == 0
+        assert data["violations"] == []
+
+        git(["commit", "--allow-empty", "-m", "feat(ingest): read claude session bundles"], cwd=repo)
+        code, data = self._run_audit(repo, strict=True)
+        assert code == 0
+        assert data["violations"] == []
+        assert any(a.get("commit") for a in data["advisories"])
+
+    def test_agent_branded_branch_name_in_merge_subject(self, tmp_path: Path) -> None:
+        repo = tmp_path / "branch"
+        repo.mkdir()
+        init_repo(repo)
+        self._copy_audit_script(repo)
+        (repo / "n.txt").write_text("x\n", encoding="utf-8")
+        git(["add", "n.txt"], cwd=repo)
+        git(
+            ["commit", "-m", "Merge pull request #7 from DasVR/cursor/nightly-run"],
+            cwd=repo,
+            env={"GIT_AUTHOR_NAME": "Arriq", "GIT_AUTHOR_EMAIL": "157200408+DasVR@users.noreply.github.com"},
+        )
+        code, data = self._run_audit(repo, strict=True)
+        assert code == 1
+        assert any(v["kind"] == "branch-name" for v in data["violations"])
+
     def test_report_only_exits_zero_with_violations(self, tmp_path: Path) -> None:
         repo = tmp_path / "report"
         repo.mkdir()

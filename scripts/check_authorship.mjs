@@ -33,7 +33,7 @@ function isIgnoredPath(relPath) {
 	return false;
 }
 
-const MSG_TRAILER_RES = [
+const MSG_CREDIT_RES = [
 	{ re: /co-authored-by:/i, label: "co-authored-by trailer" },
 	{ re: /generated[ -](by|with)/i, label: "generated-by attribution" },
 	{ re: /generated-by:/i, label: "generated-by trailer" },
@@ -41,16 +41,25 @@ const MSG_TRAILER_RES = [
 		re: /made (by|with) (claude|cursor|copilot|ai)/i,
 		label: "made-by AI attribution",
 	},
+	{ re: /ai-(assisted|generated|written)/i, label: "AI-assisted attribution" },
+	{ re: /vibe[- ]cod/i, label: "vibe-coding attribution" },
+	{ re: /🤖/, label: "robot emoji" },
+];
+
+// Subject-matter mentions of the tools this project interoperates with are NOT credit:
+// the product legitimately ingests external agent session bundles. Reported, never fatal.
+const MSG_MENTION_RES = [
 	{
 		re: /\b(claude|cursor|copilot|chatgpt|openai|anthropic|codex|devin|windsurf|aider|kimi|composer-2)\b/i,
 		label: "tool or model name in message",
 	},
 	{ re: /gpt-[0-9]/i, label: "GPT model in message" },
 	{ re: /\bAI\b/, label: "AI (whole word) in message" },
-	{ re: /ai-(assisted|generated|written)|ai-assisted/i, label: "AI-assisted in message" },
-	{ re: /vibe[- ]cod/i, label: "vibe-coding in message" },
-	{ re: /🤖/, label: "robot emoji in message" },
 ];
+
+// Agent-branded branch names leaking into merge subjects / messages.
+const MSG_BRANCH_RE = /\b(?:agent|cursor|claude|copilot|ai|bot)\/[a-z0-9]/i;
+
 
 const AUTHOR_NAME_RE =
 	/cursor|claude|copilot|openai|anthropic|chatgpt|\bgpt\b|codex|cursoragent|\bbot\b/i;
@@ -119,16 +128,30 @@ function printHelp() {
 `);
 }
 
-function scanCommitMessage(fullMessage) {
-	const hits = [];
-	for (const { re, label } of MSG_TRAILER_RES) {
+function scanCommitMessage(subject, fullMessage) {
+	const violations = [];
+	const advisories = [];
+	for (const { re, label } of MSG_CREDIT_RES) {
 		if (re.test(fullMessage)) {
 			const line =
 				fullMessage.split("\n").find((l) => re.test(l)) ?? fullMessage.slice(0, 120);
-			hits.push({ label, snippet: line.trim() });
+			violations.push({ label, snippet: line.trim() });
 		}
 	}
-	return hits;
+	if (MSG_BRANCH_RE.test(subject)) {
+		violations.push({
+			label: "agent-branded branch name",
+			snippet: subject.trim(),
+		});
+	}
+	for (const { re, label } of MSG_MENTION_RES) {
+		if (re.test(fullMessage)) {
+			const line =
+				fullMessage.split("\n").find((l) => re.test(l)) ?? fullMessage.slice(0, 120);
+			advisories.push({ label, snippet: line.trim() });
+		}
+	}
+	return { violations, advisories };
 }
 
 function scanHistory(range) {
@@ -142,6 +165,7 @@ function scanHistory(range) {
 	const raw = git(logArgs);
 	const chunks = raw.split("---COMMIT---\n").filter((c) => c.trim());
 	const violations = [];
+	const advisories = [];
 	let commitsScanned = 0;
 
 	for (const chunk of chunks) {
@@ -152,13 +176,24 @@ function scanHistory(range) {
 		const fullMessage = `${subject}\n${body}`.trim();
 		commitsScanned++;
 
-		for (const hit of scanCommitMessage(fullMessage)) {
+		const hits = scanCommitMessage(subject, fullMessage);
+		for (const hit of hits.violations) {
 			violations.push({
-				kind: "trailer",
+				kind: hit.label === "agent-branded branch name" ? "branch-name" : "trailer",
 				commit: shortHash,
 				fullHash,
 				subject,
 				author: `${an} <${ae}>`,
+				line: null,
+				snippet: hit.snippet,
+				detail: hit.label,
+			});
+		}
+		for (const hit of hits.advisories) {
+			advisories.push({
+				kind: "advisory",
+				commit: shortHash,
+				subject,
 				line: null,
 				snippet: hit.snippet,
 				detail: hit.label,
@@ -198,7 +233,7 @@ function scanHistory(range) {
 		}
 	}
 
-	return { commitsScanned, violations };
+	return { commitsScanned, violations, advisories };
 }
 
 function scanFiles() {
@@ -279,7 +314,7 @@ function main() {
 	const historyViolations = dedupeViolations(history.violations);
 	const fileViolations = dedupeViolations(files.violations);
 	const allViolations = [...historyViolations, ...fileViolations];
-	const advisories = files.advisories;
+	const advisories = [...history.advisories, ...files.advisories];
 
 	if (opts.json) {
 		const payload = {
@@ -303,7 +338,7 @@ function main() {
 			}),
 			advisories: advisories.map((a) => ({
 				kind: a.kind,
-				file: a.file,
+				...(a.commit ? { commit: a.commit } : { file: a.file }),
 				line: a.line,
 				snippet: a.snippet,
 			})),
@@ -334,8 +369,15 @@ function main() {
 		if (advisories.length === 0) {
 			console.log("(none)");
 		} else {
-			for (const a of advisories) {
-				console.log(`${a.file}:${a.line} — ${a.detail} — ${a.snippet}`);
+			const limit = 25;
+			for (const a of advisories.slice(0, limit)) {
+				const where = a.commit ? `${a.commit} ${a.subject}` : `${a.file}:${a.line}`;
+				console.log(`${where} — ${a.detail} — ${a.snippet}`);
+			}
+			if (advisories.length > limit) {
+				console.log(
+					`… ${advisories.length - limit} more advisories (use --json for the full list)`,
+				);
 			}
 		}
 
