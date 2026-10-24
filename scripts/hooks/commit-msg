@@ -1,0 +1,81 @@
+#!/bin/sh
+# commit-msg hook: reject AI attribution in commit messages and enforce conventional commits.
+#
+# Comment lines (# ...) are ignored. Other lines must not match AI credit / trailer patterns
+# (Co-Authored-By, Generated-by/with, made by claude/cursor/copilot/ai, standalone tool names,
+# AI-assisted, vibe-coding, robot emoji). First non-comment line must be conventional-commit
+# style or Merge / Revert / fixup! / squash!.
+
+msg_file="${1:?usage: commit-msg <message-file>}"
+if [ ! -f "$msg_file" ]; then
+	echo "commit-msg: file not found: $msg_file" >&2
+	exit 1
+fi
+
+policy_reminder="Policy: no AI co-authors, generated-by lines, or tool names in commit messages; use conventional commit subjects."
+
+body=$(grep -v '^#' "$msg_file" || true)
+first_line=$(printf '%s\n' "$body" | sed -n '/./{p;q;}')
+
+if [ -z "$first_line" ]; then
+	echo "Empty commit message." >&2
+	echo "$policy_reminder" >&2
+	exit 1
+fi
+
+conv_re='^(feat|fix|docs|test|refactor|chore|perf|build|ci|style|revert)(\([a-z0-9._-]+\))?!?: .{1,72}$'
+alt_re='^(Merge |Revert |fixup!|squash!)'
+if ! printf '%s' "$first_line" | grep -Eq "$conv_re"; then
+	if ! printf '%s' "$first_line" | grep -Eq "$alt_re"; then
+		echo "$first_line" >&2
+		echo "Reason: subject is not conventional-commit style (type(scope)?: summary, max 72 chars)." >&2
+		echo "$policy_reminder" >&2
+		exit 1
+	fi
+fi
+
+reject() {
+	echo "$1" >&2
+	echo "Reason: $2" >&2
+	echo "$policy_reminder" >&2
+	exit 1
+}
+
+if printf '%s\n' "$body" | grep -Eiq 'co-authored-by:'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'co-authored-by:' | head -n 1)
+	reject "$line" 'AI co-author trailer'
+fi
+if printf '%s\n' "$body" | grep -Eiq 'generated[ -](by|with)|generated-by:'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'generated[ -](by|with)|generated-by:' | head -n 1)
+	reject "$line" 'generated-by attribution'
+fi
+if printf '%s\n' "$body" | grep -Eiq 'made (by|with) (claude|cursor|copilot|ai)'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'made (by|with) (claude|cursor|copilot|ai)' | head -n 1)
+	reject "$line" 'made-by AI attribution'
+fi
+if printf '%s\n' "$body" | grep -Eiq '\b(claude|cursor|copilot|chatgpt|openai|anthropic|codex|devin|windsurf|aider|kimi|composer-2)\b'; then
+	line=$(printf '%s\n' "$body" | grep -Ei '\b(claude|cursor|copilot|chatgpt|openai|anthropic|codex|devin|windsurf|aider|kimi|composer-2)\b' | head -n 1)
+	reject "$line" 'tool or model name in message'
+fi
+if printf '%s\n' "$body" | grep -Eiq 'gpt-[0-9]'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'gpt-[0-9]' | head -n 1)
+	reject "$line" 'GPT model reference in message'
+fi
+if printf '%s\n' "$body" | grep -Eq '\bAI\b'; then
+	line=$(printf '%s\n' "$body" | grep -E '\bAI\b' | head -n 1)
+	reject "$line" 'AI attribution (whole word AI)'
+fi
+if printf '%s\n' "$body" | grep -Eiq 'ai-(assisted|generated|written)|ai-assisted'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'ai-(assisted|generated|written)|ai-assisted' | head -n 1)
+	reject "$line" 'AI-assisted attribution'
+fi
+if printf '%s\n' "$body" | grep -Eiq 'vibe[- ]cod'; then
+	line=$(printf '%s\n' "$body" | grep -Ei 'vibe[- ]cod' | head -n 1)
+	reject "$line" 'vibe-coding attribution'
+fi
+if printf '%s\n' "$body" | grep -Fq '🤖'; then
+	line=$(printf '%s\n' "$body" | grep -F '🤖' | head -n 1)
+	reject "$line" 'robot emoji attribution'
+fi
+
+exit 0

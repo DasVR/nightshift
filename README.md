@@ -19,6 +19,22 @@ curl -s localhost:8788/health
 
 See `docs/done-notify.md` for how notifications are configured and tested.
 
+## Repo hygiene
+
+Install the commit-message hook (conventional commits, no AI attribution in messages):
+
+```bash
+sh scripts/install-hooks.sh
+```
+
+Audit git history and tracked files:
+
+```bash
+node scripts/check_authorship.mjs
+```
+
+See `CONTRIBUTING.md` for commit style, branch naming, PR text, and authorship rules.
+
 ## Collector (PC side)
 
 Discover local Claude Code session jsonl files, build a zip + manifest, and POST to the server:
