@@ -17,6 +17,8 @@ uvicorn server.main:app --reload
 curl -s localhost:8788/health
 ```
 
+See `docs/done-notify.md` for how notifications are configured and tested.
+
 ## Layout
 
 - `server/` — FastAPI app, settings, and the module-level `app` instance.
