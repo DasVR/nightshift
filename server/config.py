@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     log_level: str = "info"
     notify_targets: list[str] = ["discord:home"]  # hermes send targets, used by the done-notify slice
     photon_target: str | None = None  # optional second notify channel
+    max_session_bytes: int = 64 * 1024 * 1024  # 64 MiB per session file
+    max_bundle_bytes: int = 512 * 1024 * 1024  # 512 MiB total uncompressed bundle
 
     claude_bin: str = "claude"
     claude_projects_dir: Path = Path.home() / ".claude" / "projects"
@@ -67,10 +69,21 @@ class Settings(BaseSettings):
         """Directory for storing run state/logs."""
         return self.data_dir / "runs"
 
+    @property
+    def db_path(self) -> Path:
+        """Path to the sqlite session store."""
+        return self.data_dir / "nightshift.db"
+
+    @property
+    def sessions_dir(self) -> Path:
+        """Directory for persisted raw session jsonl files."""
+        return self.data_dir / "sessions"
+
     def ensure_dirs(self) -> None:
-        """Create data_dir and runs_dir if they do not exist."""
+        """Create data_dir and subdirectories if they do not exist."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.runs_dir.mkdir(parents=True, exist_ok=True)
+        self.sessions_dir.mkdir(parents=True, exist_ok=True)
 
 
 @lru_cache
