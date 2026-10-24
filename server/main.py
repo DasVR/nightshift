@@ -1,16 +1,22 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, status
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from server import __version__
 from server.config import Settings, get_settings
+from server.hackaboom import live_mirror_status
 from server.notify import router as notify_router
 from server.routes import sessions_router
 from server.runs import ClaudeTmuxRunner, RunRecord, RunStatus, RunStore, RunWorker
 from server.sessions import InvalidSessionId, SessionNotFound, find_session
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 class RunCreate(BaseModel):
@@ -51,6 +57,37 @@ def create_app(
     app.state.run_worker = run_worker
     app.include_router(notify_router)
     app.include_router(sessions_router)
+    if STATIC_DIR.is_dir():
+        app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def desk_page() -> FileResponse:
+        """Control panel: pick a session, resume it, send follow-ups."""
+        index = STATIC_DIR / "index.html"
+        if not index.is_file():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="desk UI is missing",
+            )
+        return FileResponse(index, media_type="text/html; charset=utf-8")
+
+    @app.get("/mirror")
+    def mirror_status() -> dict:
+        """Live editor-bridge status: typing replay and heartbeat sink."""
+        snapshot = live_mirror_status(settings_obj)
+        typing = snapshot.status in {"ready", "started"}
+        return {
+            "status": snapshot.status,
+            "detail": snapshot.detail,
+            "port": snapshot.port,
+            "version": snapshot.version,
+            "panel_url": snapshot.panel_url,
+            "telemetry_enabled": snapshot.telemetry_enabled,
+            "plugin_dir": snapshot.plugin_dir,
+            "collision": snapshot.collision,
+            "typing": typing,
+            "heartbeats": typing and snapshot.telemetry_enabled is True,
+        }
 
     @app.get("/health")
     def health() -> dict[str, str]:

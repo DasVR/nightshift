@@ -105,9 +105,9 @@ Write-Host "    add to PATH if not already:  $BaseDir\bin"
 # --- 5. tunneled panel view (hackaboom server editor) -----------------------------
 if (-not $NoTunnel) {
   Step "panel tunnel helper"
-  "@echo off`r`necho server panel will be at http://127.0.0.1:8788 (keep this window open)`r`nssh -N -L 8788:127.0.0.1:8788 das@100.104.181.43" |
+  "@echo off`r`necho resume desk http://127.0.0.1:8791  editor panel http://127.0.0.1:8788`r`nssh -N -L 8791:127.0.0.1:8791 -L 8788:127.0.0.1:8788 das@100.104.181.43" |
     Set-Content "$BaseDir\bin\panel-tunnel.bat" -Encoding Ascii
-  Good "panel-tunnel.bat (server-side editor view, over ssh, nothing exposed)"
+  Good "panel-tunnel.bat (resume desk :8791 and editor panel :8788, over ssh)"
 }
 
 # --- 6. connectivity ---------------------------------------------------------------

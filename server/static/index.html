@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nightshift</title>
+  <link rel="stylesheet" href="/static/desk.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the panel</a>
+  <header class="top">
+    <div class="frame bar">
+      <p class="brand">Nightshift</p>
+      <p class="stamp" id="svc-stamp"><span class="dot"></span> connecting</p>
+    </div>
+  </header>
+  <main class="frame" id="main">
+    <div class="title">
+      <h1>Resume on this box</h1>
+      <p class="lede">Pick a session, send an instruction, and keep talking after it lands. File edits still type out in the editor and can count as ordinary coding time.</p>
+    </div>
+
+    <section aria-labelledby="mirror-h">
+      <div class="section-head">
+        <h2 id="mirror-h">Editor</h2>
+        <p class="aside" id="mirror-aside">Checking the bridge…</p>
+      </div>
+      <div class="panel" id="mirror">
+        <p class="empty">Checking…</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="resume-h">
+      <div class="section-head">
+        <h2 id="resume-h">Run</h2>
+        <p class="aside">Same session for follow-ups</p>
+      </div>
+      <form class="panel form" id="resume-form">
+        <label for="session">Session</label>
+        <select id="session" required>
+          <option value="">Loading sessions…</option>
+        </select>
+        <p class="hint" id="session-meta"></p>
+        <label for="instruction">Instruction</label>
+        <textarea id="instruction" rows="4" required placeholder="Continue the current task.">Continue the current task.</textarea>
+        <div class="row">
+          <button type="submit" class="btn primary" id="btn-resume">Resume</button>
+          <p class="hint" id="form-status" role="status"></p>
+        </div>
+      </form>
+    </section>
+
+    <section aria-labelledby="runs-h">
+      <div class="section-head">
+        <h2 id="runs-h">Runs</h2>
+        <p class="aside">Newest first</p>
+      </div>
+      <div class="panel as-list" id="runs">
+        <p class="empty">No runs yet.</p>
+      </div>
+    </section>
+  </main>
+  <script src="/static/desk.js"></script>
+</body>
+</html>

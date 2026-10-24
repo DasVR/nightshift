@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     data_dir: Path = Path("data")  # root for ingested bundles + run logs (gitignored)
     host: str = "127.0.0.1"
-    port: int = 8788
+    port: int = 8791
     log_level: str = "info"
     notify_targets: list[str] = ["discord:home"]  # hermes send targets, used by the done-notify slice
     photon_target: str | None = None  # optional second notify channel
@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     run_timeout_seconds: int = 3600
     tmux_bin: str = "tmux"
     worker_poll_seconds: float = 0.5
+
+    # Mirror (Hackaboom) — typing replay + optional heartbeats on this box.
+    hackaboom_bin: str = "hackaboom"
+    hackaboom_plugin_dir: Path | None = None
+    hackaboom_port: int = 8788
+    hackaboom_prepare: bool = True
 
     @field_validator("claude_permission_mode")
     @classmethod
@@ -55,6 +61,20 @@ class Settings(BaseSettings):
     def _expanduser(cls, value: Path) -> Path:
         """Expand a leading '~' in a path value to the user's home directory."""
         return value.expanduser()
+
+    @field_validator("hackaboom_plugin_dir", mode="before")
+    @classmethod
+    def _empty_plugin_dir(cls, value: object) -> object:
+        """Treat a blank env value as unset."""
+        if value == "":
+            return None
+        return value
+
+    @field_validator("hackaboom_plugin_dir", mode="after")
+    @classmethod
+    def _expand_plugin_dir(cls, value: Path | None) -> Path | None:
+        """Expand a leading '~' when a plugin directory is set."""
+        return value.expanduser() if value is not None else None
 
     @field_validator("notify_targets", mode="before")
     @classmethod

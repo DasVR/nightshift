@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shlex
 import subprocess
 import threading
@@ -13,6 +14,7 @@ from typing import Protocol
 from pydantic import BaseModel
 
 from server.config import Settings
+from server.hackaboom import MirrorStatus, prepare_mirror, resolve_plugin_dir
 
 
 class RunStatus(str, Enum):
@@ -43,6 +45,9 @@ class RunRecord(BaseModel):
     error: str | None = None
     cost_usd: float | None = None
     num_turns: int | None = None
+    mirror_status: str | None = None
+    mirror_detail: str | None = None
+    mirror_panel_url: str | None = None
 
 
 class Runner(Protocol):
@@ -153,10 +158,8 @@ class ClaudeTmuxRunner:
     def _tmux_name(self, record: RunRecord) -> str:
         return f"nsrun-{record.id[:8]}"
 
-    def start(self, record: RunRecord) -> None:
-        log_path = self._log_path(record)
-        exit_path = self._exit_path(record)
-        tmux_name = self._tmux_name(record)
+    def claude_argv(self, record: RunRecord) -> list[str]:
+        """Argv for a headless resume, including the editor plugin when present."""
         argv = [
             self.settings.claude_bin,
             "--resume",
@@ -168,10 +171,23 @@ class ClaudeTmuxRunner:
             "--permission-mode",
             self.settings.claude_permission_mode,
         ]
+        plugin = resolve_plugin_dir(self.settings, Path.home())
+        if plugin is not None:
+            argv.extend(["--plugin-dir", str(plugin)])
+        return argv
+
+    def start(self, record: RunRecord) -> None:
+        log_path = self._log_path(record)
+        exit_path = self._exit_path(record)
+        tmux_name = self._tmux_name(record)
+        argv = self.claude_argv(record)
         shell_cmd = (
             f"{shlex.join(argv)} > {shlex.quote(str(log_path))} 2>\u00261; "
             f"echo $? > {shlex.quote(str(exit_path))}"
         )
+        env = os.environ.copy()
+        if "--plugin-dir" in argv:
+            env["CLAUDE_CODE_PLUGIN_DIRS"] = argv[argv.index("--plugin-dir") + 1]
         subprocess.run(
             [
                 self.settings.tmux_bin,
@@ -186,6 +202,7 @@ class ClaudeTmuxRunner:
                 shell_cmd,
             ],
             check=True,
+            env=env,
         )
         record.tmux_session = tmux_name
 
@@ -268,10 +285,20 @@ class RunWorker:
                 )
         return None, None, None
 
+    def _apply_mirror(self, record: RunRecord, mirror: MirrorStatus) -> None:
+        """Copy editor-bridge status onto the run without failing it."""
+        record.mirror_status = mirror.status
+        record.mirror_detail = mirror.detail
+        record.mirror_panel_url = mirror.panel_url
+
     def _process_run(self, record: RunRecord) -> None:
         record.status = RunStatus.RUNNING.value
         record.started_at = datetime.now(timezone.utc).isoformat()
         self.store.update(record)
+
+        if self.settings.hackaboom_prepare:
+            mirror = prepare_mirror(self.settings, record.cwd)
+            self._apply_mirror(record, mirror)
 
         self.runner.start(record)
         self.store.update(record)
