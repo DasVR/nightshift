@@ -1,0 +1,3 @@
+{"sessionId":"11111111-2222-3333-4444-555555555555","type":"user","timestamp":"2024-01-01T10:00:00Z","cwd":"/home/test/proj","message":{"content":"hello"}}
+{"sessionId":"11111111-2222-3333-4444-555555555555","type":"assistant","timestamp":"2024-01-01T10:01:00Z","cwd":"/home/test/proj","message":{"content":[{"type":"tool_use","name":"test_tool"}]}}
+{"sessionId":"11111111-2222-3333-4444-555555555555","type":"assistant","timestamp":"2024-01-01T10:02:00Z","cwd":"/home/test/proj","message":{"content":"done"}}

@@ -23,7 +23,13 @@ curl -s localhost:8788/health
 - `collector/` — future PC-side collector that will pack and POST session jsonl (slice 4).
 - `tests/` — real tests for config and the `/health` endpoint.
 - `docs/PLAN.md` — the approved slice plan and ground rules.
+- `docs/ingest.md` — ingest endpoint, bundle format, manifest schema, and idempotency rules.
 
 ## Status
 
-v0.1 is a scaffold only. Slices 1–5 (session ingest, headless resume runner, done-notify, PC collector + dashboard, and Cursor path) are tracked in `docs/PLAN.md` and are not yet implemented.
+v0.1 is a scaffold plus slice 1. Slices 2–5 (headless resume runner, done-notify, PC collector +
+dashboard, and Cursor path) are tracked in `docs/PLAN.md` and are not yet implemented.
+
+Slice 1 (CC session ingest) is live: `POST /sessions/ingest` accepts a zip or bare jsonl bundle with an
+optional manifest, parses it into a sqlite session store at `data/nightshift.db`, and serves
+`GET /sessions` + `GET /sessions/{id}`. See `docs/ingest.md`.
