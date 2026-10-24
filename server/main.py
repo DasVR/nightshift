@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from server import __version__
 from server.config import Settings, get_settings
+from server.notify import router as notify_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -14,6 +15,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="session handoff server",
     )
     app.state.settings = settings if settings is not None else get_settings()
+    app.include_router(notify_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
