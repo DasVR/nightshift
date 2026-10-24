@@ -25,6 +25,35 @@ class Settings(BaseSettings):
     notify_targets: list[str] = ["discord:home"]  # hermes send targets, used by the done-notify slice
     photon_target: str | None = None  # optional second notify channel
 
+    claude_bin: str = "claude"
+    claude_projects_dir: Path = Path.home() / ".claude" / "projects"
+    claude_permission_mode: str = "acceptEdits"
+    run_timeout_seconds: int = 3600
+    tmux_bin: str = "tmux"
+    worker_poll_seconds: float = 0.5
+
+    @field_validator("claude_permission_mode")
+    @classmethod
+    def _validate_permission_mode(cls, value: str) -> str:
+        """Only allow the six documented Claude headless permission modes."""
+        allowed = {
+            "acceptEdits",
+            "auto",
+            "bypassPermissions",
+            "manual",
+            "dontAsk",
+            "plan",
+        }
+        if value not in allowed:
+            raise ValueError(f"invalid permission mode: {value!r}")
+        return value
+
+    @field_validator("data_dir", "claude_projects_dir", mode="after")
+    @classmethod
+    def _expanduser(cls, value: Path) -> Path:
+        """Expand a leading '~' in a path value to the user's home directory."""
+        return value.expanduser()
+
     @field_validator("notify_targets", mode="before")
     @classmethod
     def _parse_notify_targets(cls, value: object) -> object:
