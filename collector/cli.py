@@ -15,7 +15,7 @@ from collector.bundle import (
 from collector.client import format_ingest_response, post_ingest
 from collector.discovery import discover_sessions
 
-DEFAULT_SERVER = "http://127.0.0.1:8788"
+DEFAULT_SERVER = "http://127.0.0.1:8791"
 ENV_SERVER_URL = "NIGHTSHIFT_SERVER_URL"
 
 

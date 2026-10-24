@@ -28,6 +28,10 @@ _ENV_NAMES = (
     "NIGHTSHIFT_RUN_TIMEOUT_SECONDS",
     "NIGHTSHIFT_TMUX_BIN",
     "NIGHTSHIFT_WORKER_POLL_SECONDS",
+    "NIGHTSHIFT_HACKABOOM_BIN",
+    "NIGHTSHIFT_HACKABOOM_PLUGIN_DIR",
+    "NIGHTSHIFT_HACKABOOM_PORT",
+    "NIGHTSHIFT_HACKABOOM_PREPARE",
 )
 
 
@@ -40,6 +44,7 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
         data_dir=tmp_path / "data",
         claude_projects_dir=tmp_path / "projects",
         worker_poll_seconds=0.05,
+        hackaboom_prepare=False,
         _env_file=None,
     )
 

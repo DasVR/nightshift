@@ -72,10 +72,10 @@ Why sqlite instead of a json index? Atomic upserts on the primary key give idemp
 ```bash
 # Ingest a zip with its manifest
 curl -s -F bundle=@session-bundle.zip -F manifest=@manifest.json \
-  localhost:8788/sessions/ingest | jq .
+  localhost:8791/sessions/ingest | jq .
 
 # List sessions for a project
-curl -s 'localhost:8788/sessions?project=proj-a&limit=10' | jq .
+curl -s 'localhost:8791/sessions?project=proj-a&limit=10' | jq .
 ```
 
 ## Slice 2 input

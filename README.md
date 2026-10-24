@@ -13,8 +13,9 @@ uv pip install -e ".[dev]"
 
 cp .env.example .env
 pytest
-uvicorn server.main:app --reload
-curl -s localhost:8788/health
+uvicorn server.main:app --reload --port 8791
+# Control panel: http://127.0.0.1:8791/
+curl -s localhost:8791/health
 ```
 
 See `docs/done-notify.md` for how notifications are configured and tested.
@@ -44,7 +45,7 @@ python -m collector \
   --claude-dir ~/.claude/projects \
   --since 2026-10-01 \
   --project 'proj-*' \
-  --server http://127.0.0.1:8788
+  --server http://127.0.0.1:8791
 ```
 
 Preview without uploading:
@@ -63,6 +64,17 @@ On Windows, use `--claude-dir %USERPROFILE%\.claude\projects`. The manifest list
 - `docs/PLAN.md` — the approved slice plan and ground rules.
 - `docs/ingest.md` — ingest endpoint, bundle format, manifest schema, and idempotency rules.
 - `docs/collector.md` — collector CLI flags, discovery, manifest, and live-check recipe.
+- `docs/desk.md` — browser control panel for resume and follow-up.
+
+## Control panel
+
+Open `http://127.0.0.1:8791/` (or whatever `NIGHTSHIFT_PORT` you set). Pick a
+session, press **Resume**, and send follow-ups from the same page after the
+run queues. See [docs/desk.md](docs/desk.md).
+
+The panel also shows whether the editor bridge is up. File edits still type at
+human pace and can emit heartbeats; Nightshift only starts the editor and loads
+the plugin so those hooks can fire.
 
 ## Resume runner
 
@@ -99,10 +111,10 @@ Set `NIGHTSHIFT_CLAUDE_PERMISSION_MODE` to one of:
 
 ```bash
 # 1. start the server (do not use during pytest)
-uvicorn server.main:app --reload
+uvicorn server.main:app --reload --port 8791
 
 # 2. enqueue a run against a session you own
-curl -s -X POST localhost:8788/runs \
+curl -s -X POST localhost:8791/runs \
   -H 'Content-Type: application/json' \
   -d '{"session_id": "<uuid>", "instruction": "summarize the current task"}'
 

@@ -21,7 +21,7 @@ No extra runtime dependencies beyond the server package.
 | `--claude-dir` | `~/.claude/projects` | Root to scan recursively for session jsonl |
 | `--since` | (none) | Keep sessions whose **file mtime** (UTC) is on/after `YYYY-MM-DD` |
 | `--project` | (none, repeatable) | `fnmatch` glob against the project directory name |
-| `--server` | `http://127.0.0.1:8788` | Ingest server base URL; overridden by `NIGHTSHIFT_SERVER_URL` unless this flag is set |
+| `--server` | `http://127.0.0.1:8791` | Ingest server base URL; overridden by `NIGHTSHIFT_SERVER_URL` unless this flag is set |
 | `--timeout` | `60` | HTTP timeout in seconds |
 | `--out` | (none) | Also write `<host>-<UTC timestamp>.zip` and `manifest.json` under this directory |
 | `--dry-run` | off | Build bundle, print manifest and table; do not POST |
@@ -64,7 +64,7 @@ Sessions in the manifest are sorted by `path`. See `docs/ingest.md` for server v
 `--dry-run` prints pretty-printed manifest JSON, then a table:
 
 ```
-Target: http://127.0.0.1:8788/sessions/ingest
+Target: http://127.0.0.1:8791/sessions/ingest
 project                        session_id                                  size  sha256 (prefix)
 ----------------------------------------------------------------------------------------------------
 proj-a                         11111111-2222-3333-4444-555555555555        1234  abcd1234…
@@ -83,16 +83,16 @@ Run on a machine with real Claude Code sessions and a running nightshift server:
 
 ```bash
 # Terminal 1 — start the server
-uvicorn server.main:app --reload
+uvicorn server.main:app --reload --port 8791
 
 # Terminal 2 — dry-run first
 python -m collector --claude-dir ~/.claude/projects --since 2026-10-01 --dry-run
 
 # POST for real
-python -m collector --claude-dir ~/.claude/projects --since 2026-10-01 --server http://127.0.0.1:8788
+python -m collector --claude-dir ~/.claude/projects --since 2026-10-01 --server http://127.0.0.1:8791
 
 # Verify indexed sessions
-curl -s localhost:8788/sessions | jq .
+curl -s localhost:8791/sessions | jq .
 ```
 
 Windows example:

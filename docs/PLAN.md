@@ -19,12 +19,16 @@ half of that direction; agent-lane dashboard ideas from that spec §4 apply here
    status table). This is the actual "grind headless" engine.
 3. **Done-notify** — run lifecycle (done/failed) → `hermes send --to discord:home`
    (+ photon option), manual test endpoint.
-4. **PC collector + dashboard** (later slice, Windows side).
+4. **PC collector + dashboard** — collector CLI is on main; the resume control
+   panel lives at `GET /` on the server (`docs/desk.md`). Extra Windows dashboard
+   chrome can still land later.
 5. **Cursor path** — two separate things, do not conflate:
    - Cursor cloud agents (api.cursor.com/v1/agents, @cursor/sdk): orchestration lane; bridge
      exists at `/home/das/scripts/cursor-bridge.js` (+ `/home/das/scripts/cursor-orchestrator.py`).
      Needs the Cursor API key dropped on the wall (see RESEARCH below).
    - Cursor-as-editor adapter (Hackaboom plugin-cursor): evidence-first research per spec §3.
+   Resume runs prepare the local editor bridge (typing + optional heartbeats)
+   when `hackaboom` is on PATH; see `docs/desk.md`.
 
 ## Ground rules
 

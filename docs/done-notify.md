@@ -63,13 +63,13 @@ Call it exactly once per terminal transition. `notify_run` never raises, never b
 Fire the test endpoint:
 
 ```bash
-curl -sX POST localhost:8788/notify/test
+curl -sX POST localhost:8791/notify/test
 ```
 
 For a live send check, install Hermes locally, set `NIGHTSHIFT_NOTIFY_TARGETS`, and post to `/notify/test` with a custom summary:
 
 ```bash
-curl -sX POST localhost:8788/notify/test \
+curl -sX POST localhost:8791/notify/test \
   -H 'Content-Type: application/json' \
   -d '{"session_id":"manual-check","project":"nightshift-test","outcome":"done","summary":"live notification test"}'
 ```
