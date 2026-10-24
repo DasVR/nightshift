@@ -13,6 +13,12 @@ def _clear_nightshift_env(monkeypatch: MonkeyPatch) -> None:
         "NIGHTSHIFT_LOG_LEVEL",
         "NIGHTSHIFT_NOTIFY_TARGETS",
         "NIGHTSHIFT_PHOTON_TARGET",
+        "NIGHTSHIFT_CLAUDE_BIN",
+        "NIGHTSHIFT_CLAUDE_PROJECTS_DIR",
+        "NIGHTSHIFT_CLAUDE_PERMISSION_MODE",
+        "NIGHTSHIFT_RUN_TIMEOUT_SECONDS",
+        "NIGHTSHIFT_TMUX_BIN",
+        "NIGHTSHIFT_WORKER_POLL_SECONDS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -46,3 +52,18 @@ def test_env_override(monkeypatch: MonkeyPatch) -> None:
     settings = get_settings()
     assert settings.port == 9999
     assert settings.notify_targets == ["discord:home", "photon:nightshift-dev"]
+
+
+def test_expanduser_dirs(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """Paths with a leading '~' are expanded, and derived directories still work."""
+    _clear_nightshift_env(monkeypatch)
+
+    settings = Settings(
+        _env_file=None,
+        data_dir=tmp_path / "d",
+        claude_projects_dir=Path("~/fake-projects"),
+    )
+    assert settings.claude_projects_dir == Path.home() / "fake-projects"
+    assert settings.runs_dir == tmp_path / "d" / "runs"
+    settings.ensure_dirs()
+    assert settings.runs_dir.is_dir()
