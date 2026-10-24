@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from server import __version__
 from server.config import Settings, get_settings
 from server.notify import router as notify_router
+from server.routes import sessions_router
 from server.runs import ClaudeTmuxRunner, RunRecord, RunStatus, RunStore, RunWorker
 from server.sessions import InvalidSessionId, SessionNotFound, find_session
 
@@ -49,6 +50,7 @@ def create_app(
     app.state.run_runner = run_runner
     app.state.run_worker = run_worker
     app.include_router(notify_router)
+    app.include_router(sessions_router)
 
     @app.get("/health")
     def health() -> dict[str, str]:

@@ -19,6 +19,8 @@ def _clear_nightshift_env(monkeypatch: MonkeyPatch) -> None:
         "NIGHTSHIFT_RUN_TIMEOUT_SECONDS",
         "NIGHTSHIFT_TMUX_BIN",
         "NIGHTSHIFT_WORKER_POLL_SECONDS",
+        "NIGHTSHIFT_MAX_SESSION_BYTES",
+        "NIGHTSHIFT_MAX_BUNDLE_BYTES",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -35,11 +37,16 @@ def test_defaults(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     assert settings.log_level == "info"
     assert settings.notify_targets == ["discord:home"]
     assert settings.photon_target is None
+    assert settings.max_session_bytes == 64 * 1024 * 1024
+    assert settings.max_bundle_bytes == 512 * 1024 * 1024
+    assert settings.db_path == settings.data_dir / "nightshift.db"
+    assert settings.sessions_dir == settings.data_dir / "sessions"
 
     dir_settings = Settings(data_dir=tmp_path / "d", _env_file=None)
     dir_settings.ensure_dirs()
     assert dir_settings.data_dir.is_dir()
     assert dir_settings.runs_dir.is_dir()
+    assert dir_settings.sessions_dir.is_dir()
 
 
 def test_env_override(monkeypatch: MonkeyPatch) -> None:

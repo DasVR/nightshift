@@ -25,6 +25,7 @@ See `docs/done-notify.md` for how notifications are configured and tested.
 - `collector/` — future PC-side collector that will pack and POST session jsonl (slice 4).
 - `tests/` — real tests for config and the `/health` endpoint.
 - `docs/PLAN.md` — the approved slice plan and ground rules.
+- `docs/ingest.md` — ingest endpoint, bundle format, manifest schema, and idempotency rules.
 
 ## Resume runner
 
@@ -80,5 +81,14 @@ See `docs/RESUME-NOTES.md` for the full empirical matrix that determined these b
 
 ## Status
 
-v0.1 scaffold is live. Slice 2 (headless resume runner) is implemented.
-Slices 1, 3–5 (session ingest, done-notify, PC collector + dashboard, Cursor path) are tracked in `docs/PLAN.md`.
+v0.1 is complete on main: scaffold plus slice 1 (CC session ingest), slice 2 (headless resume
+runner) and slice 3 (done-notify). Remaining slices 4–5 (PC collector + dashboard, Cursor path)
+are tracked in `docs/PLAN.md` and not yet implemented.
+
+- Ingest: `POST /sessions/ingest` accepts a zip or bare jsonl bundle with an optional manifest,
+  parses it into a sqlite session store at `data/nightshift.db`, and serves `GET /sessions` +
+  `GET /sessions/{id}`. See `docs/ingest.md`.
+- Resume runner: `POST /runs` queues a headless Claude resume in tmux; `GET /runs/{id}` reports
+  queued/running/done/failed. See `docs/RESUME-NOTES.md` for the full empirical matrix.
+- Done-notify: run terminal states ping `hermes send --to <target>` (discord:home default).
+  See `docs/done-notify.md`.
