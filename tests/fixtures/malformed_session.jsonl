@@ -1,0 +1,4 @@
+this is not json
+[]
+{"sessionId":"11111111-2222-3333-4444-555555555555","type":"user","timestamp":"2024-01-01T11:00:00Z","cwd":"/home/test/proj","message":{"content":"ok"}}
+{"sessionId":"11111111-2222-3333-4444-555555555555","type":"assistant","timestamp":"unparseable-timestamp","cwd":"/home/test/proj","message":{"content":"bad ts"}}
